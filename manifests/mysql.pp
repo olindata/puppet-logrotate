@@ -6,7 +6,7 @@ class logrotate::mysql {
     mode   => 0644,
     owner  => 'root',
     group  => 'root',
-    source => 'puppet:///logrotate/mysql-server',
+    source => 'puppet:///modules/logrotate/mysql-server',
   }
 
 }

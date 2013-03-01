@@ -20,7 +20,7 @@ class logrotate {
       owner     => 'root',
       group     => 'root',
       require    => Package['logrotate'],
-      source    => 'puppet:///logrotate/logrotate.conf',
+      source    => 'puppet:///modules/logrotate/logrotate.conf',
   }
 
   include logrotate::maillog

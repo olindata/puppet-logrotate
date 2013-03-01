@@ -6,7 +6,7 @@ class logrotate::rsyslog {
     mode   => 0644,
     owner  => 'root',
     group  => 'root',
-    source => 'puppet:///logrotate/rsyslog',
+    source => 'puppet:///modules/logrotate/rsyslog',
   }
 
 }

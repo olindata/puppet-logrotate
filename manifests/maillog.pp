@@ -6,7 +6,7 @@ class logrotate::maillog {
     mode   => 0644,
     owner  => 'root',
     group  => 'root',
-    source => 'puppet:///logrotate/maillog',
+    source => 'puppet:///modules/logrotate/maillog',
   }
 
   ## Cron Entry for mail.log rotation
@@ -16,7 +16,7 @@ class logrotate::maillog {
     mode   => 0644,
     owner  => 'root',
     group  => 'root',
-    source => 'puppet:///logrotate/cron.daily/maillog',
+    source => 'puppet:///modules/logrotate/cron.daily/maillog',
   }
 
 }
