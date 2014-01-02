@@ -14,20 +14,20 @@ describe 'logrotate::rule' do
 
     let(:params) { {:path => '/var/log/foo.log'} }
     it do
-      should include_class('logrotate::base')
+      should contain_class('logrotate::base')
       should contain_file('/etc/logrotate.d/test').with({
         'owner'   => 'root',
         'group'   => 'root',
         'ensure'  => 'present',
         'mode'    => '0444',
-      }).with_content("/var/log/foo.log {\n}\n")
+      }).with_content(%r{^/var/log/foo\.log \{\n\}\n})
     end
 
     context 'with an array path' do
       let (:params) { {:path => ['/var/log/foo1.log','/var/log/foo2.log']} }
         it do
           should contain_file('/etc/logrotate.d/test').with_content(
-            "/var/log/foo1.log /var/log/foo2.log {\n}\n"
+            %r{/var/log/foo1\.log /var/log/foo2\.log \{\n\}\n}
           )
         end
     end
@@ -742,8 +742,9 @@ describe 'logrotate::rule' do
         {:path => '/var/log/foo.log', :rotate_every => 'hour'}
       }
 
-      it { should include_class('logrotate::hourly') }
+      it { should contain_class('logrotate::hourly') }
       it { should contain_file('/etc/logrotate.d/hourly/test') }
+      it { should contain_file('/etc/logrotate.d/test').with_ensure('absent') }
     end
 
     context 'and rotate_every => day' do
@@ -754,6 +755,11 @@ describe 'logrotate::rule' do
       it do
         should contain_file('/etc/logrotate.d/test') \
           .with_content(/^  daily$/)
+      end
+
+      it do
+        should contain_file('/etc/logrotate.d/hourly/test') \
+           .with_ensure('absent')
       end
     end
 
@@ -766,6 +772,11 @@ describe 'logrotate::rule' do
         should contain_file('/etc/logrotate.d/test') \
           .with_content(/^  weekly$/)
       end
+
+      it do
+        should contain_file('/etc/logrotate.d/hourly/test') \
+           .with_ensure('absent')
+      end
     end
 
     context 'and rotate_every => month' do
@@ -777,6 +788,11 @@ describe 'logrotate::rule' do
         should contain_file('/etc/logrotate.d/test') \
           .with_content(/^  monthly$/)
       end
+
+      it do
+        should contain_file('/etc/logrotate.d/hourly/test') \
+           .with_ensure('absent')
+      end
     end
 
     context 'and rotate_every => year' do
@@ -787,6 +803,11 @@ describe 'logrotate::rule' do
       it do
         should contain_file('/etc/logrotate.d/test') \
           .with_content(/^  yearly$/)
+      end
+
+      it do
+        should contain_file('/etc/logrotate.d/hourly/test') \
+           .with_ensure('absent')
       end
     end
 
@@ -977,6 +998,99 @@ describe 'logrotate::rule' do
         expect {
           should contain_file('/etc/logrotate.d/test')
         }.to raise_error(Puppet::Error, /start must be an integer/)
+      end
+    end
+
+    ###########################################################################
+    # SU / SU_OWNER / SU_GROUP
+    context 'and su => true' do
+      let(:params) {
+        {:path => '/var/log/foo.log', :su => true}
+      }
+
+      context 'and su_owner => www-data' do
+        let(:params) {
+          {
+            :path     => '/var/log/foo.log',
+            :su       => true,
+            :su_owner => 'www-data',
+          }
+        }
+
+        it do
+          should contain_file('/etc/logrotate.d/test') \
+            .with_content(/^  su www-data/)
+        end
+
+        context 'and su_group => admin' do
+          let(:params) {
+            {
+              :path     => '/var/log/foo.log',
+              :su       => true,
+              :su_owner => 'www-data',
+              :su_group => 'admin',
+            }
+          }
+
+          it do
+            should contain_file('/etc/logrotate.d/test') \
+              .with_content(/^  su www-data admin$/)
+          end
+        end
+      end
+
+      context 'and missing su_owner' do
+        let(:params) {
+          {
+            :path => '/var/log/foo.log',
+            :su   => true,
+          }
+        }
+
+        it do
+          expect {
+            should contain_file('/etc/logrotate.d/test')
+          }.to raise_error(Puppet::Error, /su requires su_owner/)
+        end
+      end
+    end
+
+    context 'and su => false' do
+      let(:params) {
+        {:path => '/var/log/foo.log', :su => false}
+      }
+
+      it do
+        should_not contain_file('/etc/logrotate.d/test') \
+          .with_content(/^  su\s/)
+      end
+
+      context 'and su_owner => wwww-data' do
+        let(:params) {
+          {
+            :path     => '/var/log/foo.log',
+            :su       => false,
+            :su_owner => 'www-data',
+          }
+        }
+
+        it do
+          expect {
+            should contain_file('/etc/logrotate.d/test')
+          }.to raise_error(Puppet::Error, /su_owner requires su/)
+        end
+      end
+    end
+
+    context 'and su => foo' do
+      let(:params) {
+        {:path => '/var/log/foo.log', :su => 'foo'}
+      }
+
+      it do
+        expect {
+          should contain_file('/etc/logrotate.d/test')
+        }.to raise_error(Puppet::Error, /su must be a boolean/)
       end
     end
 

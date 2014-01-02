@@ -82,6 +82,15 @@
 #                   before unlinking them (optional).
 # start           - The Integer number to be used as the base for the extensions
 #                   appended to the rotated log files (optional).
+# su              - A Boolean specifying whether logrotate should rotate under
+#                   the specific su_owner and su_group instead of the default.
+#                   First available in logrotate 3.8.0. (optional)
+# su_owner        - A username String that logrotate should use to rotate a
+#                   log file set instead of using the default if
+#                   su => true (optional).
+# su_group        - A String group name that logrotate should use to rotate a
+#                   log file set instead of using the default if
+#                   su => true (optional).
 # uncompresscmd   - The String command to be used to uncompress log files
 #                   (optional).
 #
@@ -142,6 +151,9 @@ define logrotate::rule(
                         $shred           = 'undef',
                         $shredcycles     = 'undef',
                         $start           = 'undef',
+                        $su              = 'undef',
+                        $su_owner        = 'undef',
+                        $su_group        = 'undef',
                         $uncompresscmd   = 'undef'
                         ) {
 
@@ -331,6 +343,14 @@ define logrotate::rule(
     }
   }
 
+  case $su {
+    'undef',false: {}
+    true: { $_su = 'su' }
+    default: {
+      fail("Logrotate::Rule[${name}]: su must be a boolean")
+    }
+  }
+
   case $mailfirst {
     'undef',false: {}
     true: {
@@ -367,6 +387,16 @@ define logrotate::rule(
     fail("Logrotate::Rule[${name}]: create_mode requires create")
   }
 
+  # su requires at least su_owner
+  if ($su == true) and ($su_owner == 'undef') {
+    fail("Logrotate::Rule[${name}]: su requires su_owner and optional su_group")
+  }
+
+  # su should be set to true if su_owner exists
+  if ($su_owner != 'undef') and ($su != true) {
+    fail("Logrotate::Rule[${name}]: su_owner requires su")
+  }
+
   #############################################################################
   #
 
@@ -376,9 +406,17 @@ define logrotate::rule(
     'hour', 'hourly': {
       include logrotate::hourly
       $rule_path = "/etc/logrotate.d/hourly/${name}"
+
+      file { "/etc/logrotate.d/${name}":
+        ensure => absent,
+      }
     }
     default: {
       $rule_path = "/etc/logrotate.d/${name}"
+
+      file { "/etc/logrotate.d/hourly/${name}":
+        ensure => absent,
+      }
     }
   }
 
